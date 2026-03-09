@@ -25,10 +25,17 @@ app.get('/login', (req,res) => {
     res.render("login");
 });
 
+app.get('/profile', isLoggedIn, async (req,res) => {
+    let user = await userModel.findOne({email: req.user.email}).populate("posts");            // will get the user based on the email
+    console.log(user);
+    res.render("profile", {user: user});
+});
+
 app.get('/logout', (req,res) => {
     res.cookie("token","");
     res.redirect("/login");
 });
+
 
 
 app.post('/register', async (req,res) => {
@@ -75,7 +82,9 @@ app.post('/login', async (req,res) => {
 
     bcrypt.compare(password, user.password, (err,result) => {         // compare(newpass,oldpass)
         if(result){
-            res.status(200).send("You can login");
+            let token = jwt.sign({email: email, userid: user._id}, "SecretKey");
+            res.cookie("token",token);
+            res.status(200).redirect("/profile");
         }
         else{
             res.redirect("/login");
@@ -84,11 +93,30 @@ app.post('/login', async (req,res) => {
       
 });
 
+app.post('/post', isLoggedIn, async (req,res) => {
+    let user = await userModel.findOne({email: req.user.email});            // will get the user based on the email
+
+    let post = await postModel.create({
+        user: user._id,
+        content: req.body.content,
+    });
+
+    user.posts.push(post._id);                                              // put the post in the user posts array
+    await user.save();
+    res.redirect("/profile");
+});
 
 
-// function isLoggedIn(req,res,next) {
 
-// }
+function isLoggedIn(req,res,next) {
+    if(req.cookies.token === "") res.redirect("/login");
+    else {
+        let data = jwt.verify(req.cookies.token , "SecretKey" );            //data will containe email and id as already used in jwt.sign
+        req.user = data;
+        next();
+    }
+    
+}
 
 
 
