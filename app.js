@@ -31,6 +31,28 @@ app.get('/profile', isLoggedIn, async (req,res) => {
     res.render("profile", {user: user});
 });
 
+
+app.get('/like/:id', isLoggedIn, async (req,res) => {
+    let post = await postModel.findOne({_id: req.params.id}).populate("user");
+    let userid = req.user.userid;
+
+    if(post.likes.indexOf(userid) === -1) {                                          // if userid is not available in the array
+        post.likes.push(userid);                                                     // saved user id in the post likes array
+    }
+    else {
+        post.likes.splice(post.likes.indexOf(userid), 1);
+    }                                                                                
+
+    await post.save();
+    res.redirect("/profile");
+});
+
+app.get('/edit/:id', isLoggedIn, async (req,res) => {
+    let post = await postModel.findOne({_id: req.params.id}).populate("user");
+    
+    res.render("edit",{post: post});
+});
+
 app.get('/logout', (req,res) => {
     res.cookie("token","");
     res.redirect("/login");
@@ -103,6 +125,12 @@ app.post('/post', isLoggedIn, async (req,res) => {
 
     user.posts.push(post._id);                                              // put the post in the user posts array
     await user.save();
+    res.redirect("/profile");
+});
+
+
+app.post('/update/:id', isLoggedIn, async (req,res) => {
+    let post = await postModel.findOneAndUpdate({_id: req.params.id}, {content: req.body.content});
     res.redirect("/profile");
 });
 
