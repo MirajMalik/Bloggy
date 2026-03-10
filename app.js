@@ -29,11 +29,14 @@ app.get('/login', (req,res) => {
 
 app.get('/profile', isLoggedIn, async (req,res) => {
     let user = await userModel.findOne({email: req.user.email}).populate("posts");            // will get the user based on the email
-    console.log(user);
+    // console.log(user);
+    if (!user) {
+        return res.redirect('/login'); 
+    }
     res.render("profile", {user: user});
 });
 
-app.get('/profile/upload', isLoggedIn, async (req,res) => {
+app.get('/profile/upload', (req,res) => {
     res.render("profileupload");
 });
 
@@ -127,6 +130,7 @@ app.post('/post', isLoggedIn, async (req,res) => {
     let post = await postModel.create({
         user: user._id,
         content: req.body.content,
+        title: req.body.title,
     });
 
     user.posts.push(post._id);                                              // put the post in the user posts array
@@ -139,8 +143,11 @@ app.post('/update/:id', isLoggedIn, async (req,res) => {
     res.redirect("/profile");
 });
 
-app.post('/upload', isLoggedIn, upload.single("image") , (req,res) => {
-    console.log(req.file);
+app.post('/upload', isLoggedIn, upload.single("image") , async (req,res) => {
+    let user = await userModel.findOne({email: req.user.email});                             // will get the user who is logged in
+    user.profilepic = req.file.filename;
+    await user.save();
+    res.redirect("/profile");
 });
 
 
