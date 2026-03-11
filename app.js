@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 
+require("./config/db.js"); 
+
 const userModel = require('./models/user');
 const postModel = require('./models/post');
 const cookieParser = require("cookie-parser");
@@ -27,6 +29,13 @@ app.get('/login', (req,res) => {
     res.render("login");
 });
 
+app.get('/feed', isLoggedIn, async (req,res) => {
+    let posts = await postModel.find().sort({date: -1}).populate("user");              // .find()->get all posts .populate(user)->added full user object to each post
+    let user  = await userModel.findOne({email : req.user.email});
+
+    res.render("feed", { posts, user });
+});
+
 app.get('/profile', isLoggedIn, async (req,res) => {
     let user = await userModel.findOne({email: req.user.email}).populate("posts");            // will get the user based on the email
     // console.log(user);
@@ -38,22 +47,6 @@ app.get('/profile', isLoggedIn, async (req,res) => {
 
 app.get('/profile/upload', (req,res) => {
     res.render("profileupload");
-});
-
-
-app.get('/like/:id', isLoggedIn, async (req,res) => {
-    let post = await postModel.findOne({_id: req.params.id}).populate("user");
-    let userid = req.user.userid;
-
-    if(post.likes.indexOf(userid) === -1) {                                          // if userid is not available in the array
-        post.likes.push(userid);                                                     // saved user id in the post likes array
-    }
-    else {
-        post.likes.splice(post.likes.indexOf(userid), 1);
-    }                                                                                
-
-    await post.save();
-    res.redirect("/profile");
 });
 
 app.get('/edit/:id', isLoggedIn, async (req,res) => {
@@ -93,13 +86,7 @@ app.post('/register', async (req,res) => {
             res.send("registered");
         })
     })
-    
-   
-
-   
-
-
-    
+       
 });
 
 app.post('/login', async (req,res) => {
@@ -138,6 +125,21 @@ app.post('/post', isLoggedIn, async (req,res) => {
     res.redirect("/profile");
 });
 
+app.post('/like/:id', isLoggedIn, async (req,res) => {
+    let post = await postModel.findOne({_id: req.params.id}).populate("user");
+    let userid = req.user.userid;
+
+    if(post.likes.indexOf(userid) === -1) {                                          // if userid is not available in the array
+        post.likes.push(userid);                                                     // saved user id in the post likes array
+    }
+    else {
+        post.likes.splice(post.likes.indexOf(userid), 1);
+    }                                                                                
+
+    await post.save();
+    res.redirect("back");                                                            // express way of saying go back to the page you were on
+});
+
 app.post('/update/:id', isLoggedIn, async (req,res) => {
     let post = await postModel.findOneAndUpdate({_id: req.params.id}, {content: req.body.content});
     res.redirect("/profile");
@@ -153,7 +155,7 @@ app.post('/upload', isLoggedIn, upload.single("image") , async (req,res) => {
 
 
 function isLoggedIn(req,res,next) {
-    if(req.cookies.token === "") res.redirect("/login");
+    if(!req.cookies.token) res.redirect("/login");
     else {
         let data = jwt.verify(req.cookies.token , "SecretKey" );            //data will containe email and id as already used in jwt.sign
         req.user = data;
