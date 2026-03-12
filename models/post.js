@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const postSchema = mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -14,7 +13,18 @@ const postSchema = mongoose.Schema({
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "user"
-    }]
+    }],
+    comments: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "user"
+        },
+        content: String,
+        date: {
+            type: Date,
+            default: Date.now
+        },
+    }],
 })
 
 const postModel = mongoose.model("post",postSchema);

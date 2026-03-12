@@ -30,7 +30,7 @@ app.get('/login', (req,res) => {
 });
 
 app.get('/feed', isLoggedIn, async (req,res) => {
-    let posts = await postModel.find().sort({date: -1}).populate("user");              // .find()->get all posts .populate(user)->added full user object to each post
+    let posts = await postModel.find().sort({date: -1}).populate("user").populate("comments.user");              // .find()->get all posts .populate(user)->added full user object to each post
     let user  = await userModel.findOne({email : req.user.email});
 
     res.render("feed", { posts, user });
@@ -151,6 +151,20 @@ app.post('/upload', isLoggedIn, upload.single("image") , async (req,res) => {
     await user.save();
     res.redirect("/profile");
 });
+
+app.post('/comment/:id', isLoggedIn, async (req,res) => {
+    let post = await postModel.findOne({_id : req.params.id});
+    let user = await userModel.findOne({email: req.user.email});
+
+    post.comments.push({
+        user: user._id,
+        content: req.body.content
+    });
+
+    await post.save();
+    res.redirect("/feed");
+
+})
 
 
 

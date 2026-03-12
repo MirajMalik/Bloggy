@@ -52,6 +52,38 @@
                         </div>
                     </div>
 
+
+
+        <!-- Comments Section -->
+        <div class="mt-4 border-t border-zinc-700 pt-3">
+
+            <!-- Comment Form -->
+            <form action="/comment/<%= post._id %>" method="POST" class="flex gap-2 mb-3">
+                <input 
+                    type="text" 
+                    name="content"
+                    placeholder="Write a comment..."
+                    class="flex-1 bg-transparent border border-zinc-700 rounded-md px-3 py-1 text-sm outline-none text-white"
+                />
+                <button type="submit" class="text-blue-300 text-sm cursor-pointer">Post</button>
+            </form>
+
+            <!-- Comments List -->
+            <% if(post.comments.length > 0) { %>
+                <% post.comments.forEach(function(comment) { %>
+                    <% if(comment.user) { %>  
+                        <div class="flex items-start gap-2 mb-2">
+                            <span class="text-blue-300 text-xs mt-0.5">@<%= comment.user.username %></span>
+                            <span class="text-zinc-300 text-xs"><%= comment.content %></span>
+                        </div>
+                     <% } %>
+                <% }) %>
+            <% } else { %>
+                <p class="text-zinc-600 text-xs">No comments yet.</p>
+            <% } %>
+
+        </div>
+
                 </div>
             <% }) %>
 
